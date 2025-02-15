@@ -17,7 +17,6 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.isVisible
 import androidx.core.view.setMargins
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.builtins.ListSerializer
@@ -83,7 +82,7 @@ class VisitsActivity:AppCompatActivity() {
                 displayVisitsAll(null)
 
                 try {
-                    val dayVisitsID = LocalDate.parse(searchDateText, DateTimeFormatter.ofPattern("dd.MM.yyyy")).format(dayVisitIdFormatter).toInt()
+                    val dayVisitsID = LocalDate.parse(searchDateText, DateTimeFormatter.ofPattern("yyyy.MM.dd")).format(dayVisitIdFormatter).toInt()
                     svVisits.post {
                         val targetViewTop = findViewById<LinearLayout>(dayVisitsID)?.top ?: 0
                         svVisits.smoothScrollTo(0, targetViewTop)
@@ -110,6 +109,7 @@ class VisitsActivity:AppCompatActivity() {
     private suspend fun getVisitsWithProgressBar(month: Int?) {
         with(binding) {
             try {
+                dateVisits.clear()
                 llVisitsBox.isVisible = false
                 tvProgressBar.isVisible = true
                 tvTitle.text = getString(R.string.all)
@@ -186,8 +186,6 @@ class VisitsActivity:AppCompatActivity() {
                 llVisitsBox.addView(LL_visits)
 
                 val title: TextView = LL_visits.getChildAt(0) as TextView
-
-                println(dateKey)
 
                 title.text = when (dayVisitsDate) {
                     localDate -> "Сегодня"
@@ -271,54 +269,70 @@ class VisitsActivity:AppCompatActivity() {
         dayVisits.sortedBy { it.number }
         val inflater = LayoutInflater.from(this@VisitsActivity)
 
-        var elIndex: Int = 0
+        if (visitsContainer is LinearLayout && dayVisits.size != 4) {
+            for (i in 0 until visitsColumnCount) {
+                val GL_visits: GridLayout = visitsContainer.getChildAt(1) as GridLayout
+                val nonEmptyLesson = dayVisits.map { it.number }.toList()
 
-        for(dayVisit in dayVisits) {
+                if (i + 1 !in nonEmptyLesson) {
+                    val visitContainer = inflater.inflate(R.layout.ll_visit_no_lesson, GL_visits, false) as LinearLayout
+                    val params: GridLayout.LayoutParams = visitContainer.layoutParams as GridLayout.LayoutParams
+                    params.apply {
+                        columnSpec = GridLayout.spec(i, 1f)
+                        setMargins(10)
+                        setGravity(Gravity.FILL)
+                    }
+
+                    GL_visits.addView(visitContainer, params)
+                }
+            }
+        }
+
+        for((elIndex, dayVisit) in dayVisits.withIndex()) {
             var GL_visits = GridLayout(this@VisitsActivity)
-            val visitCL = inflater.inflate(R.layout.cl_visit, GL_visits, false) as ConstraintLayout
-            var params: GridLayout.LayoutParams = GridLayout.LayoutParams()
+            val visitContainer = inflater.inflate(R.layout.cl_visit, GL_visits, false) as ConstraintLayout
+            val params: GridLayout.LayoutParams = visitContainer.layoutParams as GridLayout.LayoutParams
 
             if (visitsContainer is LinearLayout) {
                 GL_visits = visitsContainer.getChildAt(1) as GridLayout
 
-                params = visitCL.layoutParams as GridLayout.LayoutParams
                 params.columnSpec =
-                    GridLayout.spec(if (dayVisit.number != 5) dayVisit.number - 1 else 2)
+                    GridLayout.spec(if (dayVisit.number != 5) dayVisit.number - 1 else 2, 1f)
             } else if (visitsContainer is GridLayout) {
-                GL_visits = visitsContainer
-                GL_visits.columnCount = visitsColumnCount
-                GL_visits.rowCount = dayVisits.size / visitsColumnCount + 1
+                GL_visits = visitsContainer.apply {
+                    columnCount = visitsColumnCount
+                    rowCount = dayVisits.size / visitsColumnCount + 1
+                }
 
-                val tv_visitDate: TextView = visitCL.getChildAt(0) as TextView
+                val tv_visitDate: TextView = visitContainer.getChildAt(0) as TextView
                 tv_visitDate.text = dayVisit.date
                 tv_visitDate.visibility = View.VISIBLE
 
-                params = visitCL.layoutParams as GridLayout.LayoutParams
-                params.columnSpec = GridLayout.spec(elIndex % visitsColumnCount)
-                params.rowSpec = GridLayout.spec(elIndex / visitsColumnCount)
+                params.apply {
+                    columnSpec = GridLayout.spec(elIndex % visitsColumnCount, 1f)
+                    rowSpec = GridLayout.spec(elIndex / visitsColumnCount)
+                    height = (70 * this@VisitsActivity.resources.displayMetrics.density).toInt()
+                }
             }
 
-            params.setGravity(Gravity.FILL_VERTICAL)
             params.setMargins(10)
-            GL_visits.addView(visitCL, params)
+            params.setGravity(Gravity.FILL)
+            GL_visits.addView(visitContainer, params)
 
             when (dayVisit.status) {
-                0 -> visitCL.setBackgroundResource(R.drawable.shape_pass_background)
-                2 -> visitCL.setBackgroundResource(R.drawable.shape_lateness_background)
-
+                0 -> visitContainer.setBackgroundResource(R.drawable.shape_pass_background)
+                2 -> visitContainer.setBackgroundResource(R.drawable.shape_lateness_background)
             }
 
-            val TV_lesson: TextView = visitCL.getChildAt(1) as TextView
+            val TV_lesson: TextView = visitContainer.getChildAt(1) as TextView
             dayVisit.short = dayVisit.short.replaceFirst("Проф", "").replaceFirst("Раз", "").replaceFirst("2 курс", "")
             TV_lesson.text = dayVisit.short.split(" ")[0]
 
             if (dayVisit.mark != null) {
-                val TV_mark: TextView = visitCL.getChildAt(2) as TextView
+                val TV_mark: TextView = visitContainer.getChildAt(2) as TextView
                 TV_mark.visibility = View.VISIBLE
                 TV_mark.text = dayVisit.mark.toString()
             }
-
-            elIndex++
         }
     }
 
@@ -326,25 +340,22 @@ class VisitsActivity:AppCompatActivity() {
         val popupMenu = PopupMenu(this@VisitsActivity, view, Gravity.END)
 
         popupMenu.inflate(R.menu.menu_interval_choice)
-        with(binding) {
-            popupMenu.setOnMenuItemClickListener { menuItem: MenuItem ->
-
-                when (menuItem.itemId) {
-                    R.id.i_forMonth -> {
-                        lifecycleScope.launch {
-                            val monthNum: Int = localDate.monthValue
-                            displayVisitsAll(monthNum)
-                        }
-                        true
+        popupMenu.setOnMenuItemClickListener { menuItem: MenuItem ->
+            when (menuItem.itemId) {
+                R.id.i_forMonth -> {
+                    lifecycleScope.launch {
+                        val monthNum: Int = localDate.monthValue
+                        displayVisitsAll(monthNum)
                     }
-
-                    R.id.i_allTime -> {
-                        displayVisitsAll(null)
-                        true
-                    }
-
-                    else -> false
+                    true
                 }
+
+                R.id.i_allTime -> {
+                    displayVisitsAll(null)
+                    true
+                }
+
+                else -> false
             }
         }
 
@@ -356,7 +367,6 @@ class VisitsActivity:AppCompatActivity() {
         val menu = popupMenu.menu
 
         lifecycleScope.launch(Dispatchers.Main) {
-
             menu.add(Menu.NONE, 0, Menu.NONE, getString(R.string.all))
 
             specs.forEachIndexed { i, spec ->
