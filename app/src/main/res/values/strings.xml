@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">ScheduleJournal</string>
+    <string name="title_activity_shelude">ScheduleActivity</string>
+    <string name="try_again_later">Попробуйте позже</string>
+    <string name="error">Ошибка</string>
+    <string name="empty">Пусто</string>
+    <string name="journal_not_responding">Journal не отвечает</string>
+    <string name="all">Все</string>
+    <string name="loading...">Загружается...</string>
+    <string name="visits_error_response_failed">Response visits failed</string>
+</resources>

@@ -1,0 +1,79 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+
+    <TextView
+        android:id="@+id/tv_progressBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Вход..."
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:visibility="gone"
+        />
+
+    <LinearLayout
+        android:id="@+id/ll_loginForm"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Данные журнала"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:textStyle="bold"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_userLogin"
+            android:layout_width="280dp"
+            android:layout_height="60dp"
+            android:layout_marginTop="25dp"
+            style="@style/TextInputLayoutBasic"
+            android:hint="Логин">
+
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/tie_userLogin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_userPassword"
+            style="@style/TextInputLayoutBasic"
+            android:layout_width="280dp"
+            android:layout_height="60dp"
+            android:layout_marginTop="25dp"
+            android:hint="Пароль" >
+
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/tie_userPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_login"
+            android:layout_width="100dp"
+            android:layout_height="50dp"
+            android:layout_marginTop="30dp"
+            style="@style/ButtonRed"
+            android:text="Войти"
+            android:textAllCaps="false" />
+
+    </LinearLayout>
+
+</FrameLayout>
